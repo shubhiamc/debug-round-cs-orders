@@ -11,5 +11,5 @@ public static class TextUtils
 
     /// <summary>Finds the first item whose key equals <paramref name="key"/>.</summary>
     public static T? FindByKey<T>(IEnumerable<T> items, Func<T, object> keySelector, object key) where T : class =>
-        items.FirstOrDefault(item => keySelector(item) == key);
+        items.FirstOrDefault(item => Equals(keySelector(item), key));
 }

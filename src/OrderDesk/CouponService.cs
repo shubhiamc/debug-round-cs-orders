@@ -24,7 +24,7 @@ public sealed class CouponService
         var coupon = TextUtils.FindByKey(_store.Coupons, c => c.Code, code);
         if (coupon is null) return new CouponLookup(null, $"Unknown coupon '{code}'.");
 
-        if (_time.GetLocalNow().DateTime > coupon.ExpiresAtUtc)
+        if (_time.GetUtcNow().UtcDateTime > coupon.ExpiresAtUtc)
             return new CouponLookup(null, $"Coupon '{code}' has expired.");
 
         return new CouponLookup(coupon, null);

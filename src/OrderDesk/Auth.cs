@@ -21,7 +21,7 @@ public static class PasswordHasher
     public static bool Verify(string password, string hash, string salt)
     {
         var computed = Derive(password, Convert.FromBase64String(salt));
-        return Convert.ToBase64String(computed) == hash;
+        return CryptographicOperations.FixedTimeEquals(computed, Convert.FromBase64String(hash));
     }
 
     private static byte[] Derive(string password, byte[] salt) =>
@@ -75,6 +75,7 @@ public sealed class TokenService
 
             var claims = JsonSerializer.Deserialize<TokenClaims>(payload);
             if (claims is null) return null;
+            if (claims.Exp <= _time.GetUtcNow().ToUnixTimeSeconds()) return null;
             return claims;
         }
         catch (FormatException)

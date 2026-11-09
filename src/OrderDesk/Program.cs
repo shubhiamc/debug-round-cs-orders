@@ -114,8 +114,8 @@ api.MapGet("/orders/{id:int}", (int id, HttpContext ctx, TokenService tokens, St
     var user = AuthHelper.Authenticate(ctx, tokens, store);
     if (user is null) return Api.Error(401, "Authentication required.");
 
-    var order = store.GetOrder(id);
-    if (order.UserId != user.Id) return Api.Error(404, "Order not found.");
+    var order = store.FindOrder(id);
+    if (order is null || order.UserId != user.Id) return Api.Error(404, "Order not found.");
 
     return Results.Ok(Api.View(order));
 });
@@ -126,7 +126,7 @@ api.MapPost("/orders/{id:int}/cancel", (int id, HttpContext ctx, TokenService to
     if (user is null) return Api.Error(401, "Authentication required.");
 
     var order = store.FindOrder(id);
-    if (order is null) return Api.Error(404, "Order not found.");
+    if (order is null || order.UserId != user.Id) return Api.Error(404, "Order not found.");
 
     var result = orders.Cancel(order);
     return result.Order is null

@@ -142,8 +142,6 @@ public sealed class Store
 
     public Order? FindOrder(int id) => _orders.TryGetValue(id, out var o) ? o : null;
 
-    public Order GetOrder(int id) => _orders[id];
-
     public IEnumerable<Order> OrdersFor(int userId) =>
         _orders.Values.Where(o => o.UserId == userId).OrderBy(o => o.Id);
 }

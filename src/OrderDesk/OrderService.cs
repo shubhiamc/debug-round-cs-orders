@@ -64,29 +64,29 @@ public sealed class OrderService
                 if (product.Stock < item.Qty) return OrderResult.Fail(409, $"Not enough stock for {product.Name}.");
             }
 
-            var lines = items.Select(Reserve);
+            var lines = items.Select(Reserve).ToList();
 
             var subtotal = lines.Sum(l => l.UnitPrice * l.Qty);
-            var tax = Money.Round(subtotal * TaxRate);
-            var gross = subtotal + tax;
-            var discount = lookup.Coupon is null ? 0m : _coupons.DiscountFor(lookup.Coupon, gross);
+            var discount = lookup.Coupon is null ? 0m : _coupons.DiscountFor(lookup.Coupon, subtotal);
+            var taxable = subtotal - discount;
+            var tax = Money.Round(taxable * TaxRate);
 
             order = new Order
             {
                 Id = _store.NextOrderId(),
                 UserId = user.Id,
-                Lines = lines.ToList(),
+                Lines = lines,
                 CouponCode = lookup.Coupon?.Code,
                 Subtotal = subtotal,
                 Discount = discount,
                 Tax = tax,
-                Total = gross - discount,
+                Total = taxable + tax,
                 Status = OrderStatus.Pending,
                 CreatedAtUtc = _time.GetUtcNow().UtcDateTime
             };
         }
 
-        _store.SaveOrderAsync(order);
+        await _store.SaveOrderAsync(order);
         return OrderResult.Ok(order, 201);
     }
 
@@ -95,8 +95,11 @@ public sealed class OrderService
     {
         lock (_store.Gate)
         {
+            if (order.Status == OrderStatus.Cancelled)
+                return OrderResult.Fail(409, "Order is already cancelled.");
+
+            Restock(order);
             order.Status = OrderStatus.Cancelled;
-            if (order.Status == OrderStatus.Pending) Restock(order);
         }
 
         return OrderResult.Ok(order);
